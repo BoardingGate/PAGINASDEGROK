@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>El gorila albino · BoardingGate</title>
-  <meta name="description" content="Un gorila albino espera en la selva del atardecer. Tócalo: salta, gira o se cuelga de una liana, y al aterrizar trae un tuit de BoardingGate.">
+  <meta name="description" content="Un gorila albino en la selva. Un toque suave lo hace reaccionar; si lo mantienes o deslizas hacia arriba, salta y trae un tuit de BoardingGate.">
   <meta name="theme-color" content="#14180f">
   <link rel="canonical" href="https://boardinggate.github.io/PAGINASDEGROK/gorila/">
   <link rel="icon" href="assets/avatar-boardinggate.jpg" type="image/jpeg">
@@ -12,7 +12,7 @@
   <meta property="og:locale" content="es_ES">
   <meta property="og:site_name" content="BoardingGate">
   <meta property="og:title" content="El gorila albino · BoardingGate">
-  <meta property="og:description" content="Un gorila albino espera en la selva del atardecer. Tócalo y, al caer, aparece lo último de BoardingGate.">
+  <meta property="og:description" content="Un gorila albino en la selva. Un toque suave lo hace reaccionar; si lo mantienes o deslizas hacia arriba, salta y trae un tuit de BoardingGate.">
   <meta property="og:url" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/">
   <meta property="og:image" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/assets/og.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -21,13 +21,13 @@
   <meta property="og:image:alt" content="Un gorila albino de pie en una selva iluminada por el sol del atardecer">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="El gorila albino · BoardingGate">
-  <meta name="twitter:description" content="Un gorila albino espera en la selva del atardecer. Tócalo y, al caer, aparece lo último de BoardingGate.">
+  <meta name="twitter:description" content="Un gorila albino en la selva. Un toque suave lo hace reaccionar; si lo mantienes o deslizas hacia arriba, salta y trae un tuit de BoardingGate.">
   <meta name="twitter:image" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/assets/og.jpg">
   <meta name="twitter:image:alt" content="Un gorila albino de pie en una selva iluminada por el sol del atardecer">
   <link rel="preload" as="image" href="assets/jungla-fondo.jpg" fetchpriority="high">
   <link rel="preload" as="image" href="assets/gorila-idle.webp" type="image/webp" fetchpriority="high">
-  <link rel="stylesheet" href="style.css">
-  <script src="main.js" defer></script>
+  <link rel="stylesheet" href="style.css?v=2">
+  <script src="main.js?v=2" defer></script>
 </head>
 <body>
   <h1 class="sr-only">El gorila albino de BoardingGate</h1>
@@ -61,6 +61,11 @@
         <img class="pose" data-pose="pirueta" src="assets/gorila-pirueta.webp" alt="" width="734" height="736" draggable="false" style="--rh:0.735265;--aspect:0.997283;--ax:0.4754;--ay:0.9864">
         <img class="pose" data-pose="liana" src="assets/gorila-liana.webp" alt="" width="709" height="1029" draggable="false" style="--rh:1.027972;--aspect:0.689018;--ax:0.5200;--ay:0.9903">
         <img class="pose" data-pose="aterrizaje" src="assets/gorila-aterrizaje.webp" alt="" width="801" height="851" draggable="false" style="--rh:0.850150;--aspect:0.941246;--ax:0.4875;--ay:0.9882">
+        <img class="pose" data-pose="grunido" src="assets/gorila-grunido.webp" alt="" width="572" height="994" draggable="false" style="--rh:0.993007;--aspect:0.575453;--ax:0.5061;--ay:0.9899">
+        <img class="pose" data-pose="risa" src="assets/gorila-risa.webp" alt="" width="540" height="998" draggable="false" style="--rh:0.997003;--aspect:0.541082;--ax:0.4927;--ay:0.9900">
+        <img class="pose" data-pose="pecho" src="assets/gorila-pecho.webp" alt="" width="651" height="985" draggable="false" style="--rh:0.984016;--aspect:0.660914;--ax:0.4900;--ay:0.9888">
+        <img class="pose" data-pose="saludo" src="assets/gorila-saludo.webp" alt="" width="586" height="1005" draggable="false" style="--rh:1.003996;--aspect:0.583085;--ax:0.5139;--ay:0.9900">
+        <img class="pose" data-pose="inclinacion" src="assets/gorila-inclinacion.webp" alt="" width="547" height="995" draggable="false" style="--rh:0.994006;--aspect:0.549749;--ax:0.4868;--ay:0.9889">
         <div class="shadow" id="shadow" aria-hidden="true"></div>
         <span class="pin" id="foot" aria-hidden="true"></span>
         <span class="pin" id="hand" aria-hidden="true"></span>
@@ -72,9 +77,9 @@
 
     <canvas id="dust" aria-hidden="true"></canvas>
 
-    <p class="hint" id="hint" aria-hidden="true">Tócame</p>
+    <p class="hint" id="hint" aria-hidden="true"><span>Un toque suave y reacciona.</span><span>Mantén o desliza hacia arriba y salta.</span></p>
 
-    <button type="button" class="hit" id="hit" aria-label="Gorila albino. Tócalo para que salte."></button>
+    <button type="button" class="hit" id="hit" aria-label="Gorila albino. Un toque suave lo hace reaccionar. Mantén pulsado o desliza hacia arriba para que salte."></button>
 
     <div class="card-slot">
       <a class="card" id="card" target="_blank" rel="noopener noreferrer" href="https://x.com/boardinggate">

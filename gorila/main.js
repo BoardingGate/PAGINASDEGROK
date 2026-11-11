@@ -11,6 +11,16 @@ const POSE = {
 
 const HAND = { x: 0.2961, y: 0.0468 };
 const DURATION = 2860;
+const HOLD_MS = 300;
+const FLICK_PX = 36;
+const REACTIONS = ["grunido", "risa", "pecho", "saludo", "inclinacion"];
+const REACTION_LINE = {
+  grunido: "El gorila gruñe.",
+  risa: "El gorila se ríe.",
+  pecho: "El gorila se golpea el pecho.",
+  saludo: "El gorila saluda.",
+  inclinacion: "El gorila inclina la cabeza."
+};
 
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
 const stage = document.getElementById("stage");
@@ -46,8 +56,13 @@ const LEAVES = ["#7d9a45", "#c6a15a", "#3e6b32", "#e7d7a4", "#2c4a22", "#a3b56a"
 let mode = "idle";
 let busy = false;
 let jumpT0 = 0;
+let jumpH = 180;
 let trick = "pirueta";
 let trickFlip = false;
+let reactName = "grunido";
+let reactT0 = 0;
+let reactDur = 980;
+let lastReact = "";
 let fx = {};
 let tweets = [];
 let cursor = 0;
@@ -122,12 +137,29 @@ function poseWeights(t, which) {
   return w;
 }
 
-function jumpHeight() {
-  return Math.min(200, Math.max(120, window.innerHeight * 0.2));
+function cardLimit() {
+  if (!card.classList.contains("in")) return 18;
+  const rect = card.getBoundingClientRect();
+  if (rect.width < 20 || rect.height < 20) return 18;
+  const center = window.innerWidth / 2;
+  if (rect.left > center + gh() * 0.28) return 18;
+  return rect.bottom;
+}
+
+function measureJumpHeight() {
+  const body = gh();
+  const idleTop = img.idle.getBoundingClientRect().top;
+  const extra = PIRA_NUDGE * body + Math.min(28, body * 0.07);
+  const room = idleTop - cardLimit() - 32 - extra;
+  const wanted = Math.max(body * 1.08, window.innerHeight * 0.32);
+  if (!Number.isFinite(room)) return Math.min(wanted, body);
+  return Math.max(44, Math.min(wanted, Math.max(40, room)));
 }
 
 function motionAt(t, which) {
-  const H = jumpHeight();
+  const H = jumpH;
+  const dip = Math.max(16, Math.min(36, gh() * 0.08));
+  const floatY = Math.min(26, gh() * 0.06);
   let y = 0;
   let sx = 1;
   let sy = 1;
@@ -136,32 +168,32 @@ function motionAt(t, which) {
 
   if (t < 280) {
     const k = easeInCubic(t / 280);
-    y = lerp(0, 26, k);
+    y = lerp(0, dip, k);
     sx = lerp(1, 1.075, k);
     sy = lerp(1, 0.88, k);
   } else if (t < 390) {
-    y = 26;
+    y = dip;
     sx = 1.075;
     sy = 0.88;
   } else if (t < 860) {
     const k = easeOutExpo((t - 390) / 470);
-    y = lerp(26, -H, k);
+    y = lerp(dip, -H, k);
     const stretch = Math.sin(clamp((t - 390) / 220) * Math.PI);
     sx = lerp(1.075, 1, clamp((t - 390) / 280)) - stretch * 0.06;
     sy = lerp(0.88, 1.02, clamp((t - 390) / 280)) + stretch * 0.12;
   } else if (t < 1740) {
     if (which === "liana") {
       const k = smooth(clamp((t - 980) / 320));
-      y = lerp(-H, -Math.min(78, H * 0.38), k);
+      y = lerp(-H, -H * 0.64, k);
     } else {
       const u = (t - 860) / 880;
-      y = -H - Math.sin(u * Math.PI) * 18;
+      y = -H - Math.sin(u * Math.PI) * floatY;
     }
     sx = 1;
     sy = 1;
   } else if (t < 2140) {
     const k = easeInCubic((t - 1740) / 400);
-    const hang = which === "liana" ? -Math.min(78, H * 0.38) : -H;
+    const hang = which === "liana" ? -H * 0.64 : -H;
     y = lerp(hang, 18, k);
     const prep = clamp((t - 1980) / 160);
     sx = lerp(1, 0.97, prep);
@@ -219,7 +251,7 @@ function pivotFor(which, rot) {
 }
 
 function applyPose(w) {
-  for (const name of Object.keys(POSE)) {
+  for (const name of Object.keys(img)) {
     const o = w[name] || 0;
     const node = img[name];
     node.style.opacity = o < 0.012 ? "0" : o.toFixed(3);
@@ -361,6 +393,15 @@ function frame(now) {
     } else {
       applyJump(t);
     }
+  } else if (mode === "react") {
+    const t = now - reactT0;
+    if (t >= reactDur) {
+      mode = "idle";
+      busy = false;
+      applyIdle(now);
+    } else {
+      applyReact(t);
+    }
   } else {
     applyIdle(now);
   }
@@ -387,12 +428,110 @@ function jump() {
     }, 420);
     return;
   }
+  jumpH = measureJumpHeight();
   trick = trickFlip ? "liana" : "pirueta";
   trickFlip = !trickFlip;
   fx = { whoosh: false, card: false, impact: false };
   jumpT0 = performance.now();
   mode = "jump";
   hit.setAttribute("aria-busy", "true");
+  startLoop();
+}
+
+function nextReaction() {
+  let pick = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
+  if (pick === lastReact) pick = REACTIONS[(REACTIONS.indexOf(pick) + 1) % REACTIONS.length];
+  lastReact = pick;
+  return pick;
+}
+
+function reactionLength(name) {
+  if (name === "risa") return 1180;
+  if (name === "pecho") return 1080;
+  if (name === "grunido") return 860;
+  return 960;
+}
+
+function reactionMotion(name, t) {
+  const u = clamp(t / reactDur);
+  const env = Math.sin(u * Math.PI);
+  let x = 0;
+  let y = 0;
+  let rot = 0;
+  let sx = 1;
+  let sy = 1;
+  if (name === "grunido") {
+    rot = Math.sin(u * Math.PI * 5) * 1.8 * env;
+    x = Math.sin(u * Math.PI * 5) * 5 * env;
+    y = 7 * Math.sin(Math.min(1, u * 1.3) * Math.PI);
+    sy = 1 - env * 0.035;
+    sx = 1 + env * 0.02;
+  } else if (name === "risa") {
+    const bob = Math.abs(Math.sin(u * Math.PI * 4));
+    y = -bob * 12 * env;
+    sy = 1 + Math.sin(u * Math.PI * 4) * 0.03;
+    rot = Math.sin(u * Math.PI * 2) * 2.2;
+  } else if (name === "pecho") {
+    const beat = Math.max(0, Math.sin(u * Math.PI * 6));
+    sy = 1 - beat * 0.07;
+    sx = 1 + beat * 0.045;
+    y = beat * 7;
+    rot = Math.sin(u * Math.PI * 6) * 0.8;
+  } else if (name === "saludo") {
+    rot = -7 * env;
+    x = -10 * env;
+    y = -5 * env;
+  } else {
+    rot = 8 * env;
+    x = 7 * env;
+    y = 5 * Math.sin(u * Math.PI);
+  }
+  const poseW = Math.min(smooth(clamp(u / 0.16)), smooth(clamp((1 - u) / 0.22)));
+  return { x, y, rot, sx, sy, poseW };
+}
+
+function applyReact(t) {
+  const motion = reactionMotion(reactName, t);
+  const w = {};
+  for (const name of Object.keys(img)) w[name] = 0;
+  w.idle = 1 - motion.poseW;
+  w[reactName] = motion.poseW;
+  applyPose(w);
+  applyTransform(motion.x, motion.y, motion.rot, motion.sx, motion.sy, { x: 0, y: 0 });
+  applyShadow(motion.y);
+  applyWorld(motion.x * 0.35, 0);
+  vine.style.opacity = "0";
+  flash.style.opacity = "0";
+}
+
+function showReducedReaction(name) {
+  const w = {};
+  for (const key of Object.keys(img)) w[key] = key === name ? 1 : 0;
+  applyPose(w);
+  window.setTimeout(() => {
+    const idle = {};
+    for (const key of Object.keys(img)) idle[key] = key === "idle" ? 1 : 0;
+    applyPose(idle);
+    mode = "idle";
+    busy = false;
+  }, 680);
+}
+
+function react() {
+  if (busy) return;
+  busy = true;
+  hint.classList.add("gone");
+  ensureAudio();
+  reactName = nextReaction();
+  reactDur = reactionLength(reactName);
+  reactT0 = performance.now();
+  mode = "react";
+  live.textContent = REACTION_LINE[reactName] || "El gorila reacciona.";
+  playReactionSound(reactName);
+  if (reduce.matches) {
+    showReducedReaction(reactName);
+    return;
+  }
   startLoop();
 }
 
@@ -487,6 +626,88 @@ function playThud() {
   ng.connect(ac.destination);
   src.start(now);
   src.stop(now + 0.13);
+}
+
+function tone(ac, start, dur, f0, f1, gainValue, type) {
+  const osc = ac.createOscillator();
+  osc.type = type || "sine";
+  osc.frequency.setValueAtTime(Math.max(30, f0), start);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(30, f1), start + dur);
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(gainValue, start + Math.min(0.04, dur * 0.35));
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  osc.connect(gain);
+  gain.connect(ac.destination);
+  osc.start(start);
+  osc.stop(start + dur + 0.02);
+}
+
+function playReactionSound(name) {
+  const ac = ensureAudio();
+  if (!ac) return;
+  const now = ac.currentTime;
+  if (name === "grunido") {
+    tone(ac, now, 0.34, 98, 52, 0.055, "triangle");
+    const src = ac.createBufferSource();
+    src.buffer = noiseBuffer(ac, 0.28);
+    const low = ac.createBiquadFilter();
+    low.type = "lowpass";
+    low.frequency.value = 180;
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.04, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    src.connect(low);
+    low.connect(gain);
+    gain.connect(ac.destination);
+    src.start(now);
+    src.stop(now + 0.3);
+    return;
+  }
+  if (name === "risa") {
+    for (let i = 0; i < 4; i += 1) {
+      const t0 = now + i * 0.15;
+      const src = ac.createBufferSource();
+      src.buffer = noiseBuffer(ac, 0.08);
+      const filter = ac.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 480 + i * 50;
+      filter.Q.value = 0.9;
+      const gain = ac.createGain();
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.04, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+      src.start(t0);
+      src.stop(t0 + 0.09);
+    }
+    return;
+  }
+  if (name === "pecho") {
+    for (let i = 0; i < 3; i += 1) tone(ac, now + i * 0.18, 0.09, 150, 58, 0.07, "sine");
+    return;
+  }
+  if (name === "saludo") {
+    const src = ac.createBufferSource();
+    src.buffer = noiseBuffer(ac, 0.26);
+    const filter = ac.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(900, now);
+    filter.frequency.exponentialRampToValueAtTime(380, now + 0.26);
+    const gain = ac.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+    src.start(now);
+    src.stop(now + 0.28);
+    return;
+  }
+  tone(ac, now, 0.42, 240, 360, 0.028, "sine");
 }
 
 function resizeCanvas() {
@@ -791,41 +1012,98 @@ function loadTweets() {
     });
 }
 
-let pointerStarted = false;
+let gesture = null;
+let keyHold = null;
+
+function beginGesture(event) {
+  if (gesture || busy) return;
+  gesture = {
+    id: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    dy: 0,
+    jumped: false,
+    timer: window.setTimeout(() => {
+      if (!gesture || gesture.jumped) return;
+      gesture.jumped = true;
+      jump();
+    }, HOLD_MS)
+  };
+}
 
 stage.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return;
   if (event.target.closest(".card, .mute")) return;
-  if (event.target.closest(".hit")) pointerStarted = true;
-  jump();
+  ensureAudio();
+  beginGesture(event);
+});
+
+window.addEventListener("pointermove", (event) => {
+  pointer.x = event.clientX / window.innerWidth - 0.5;
+  pointer.y = event.clientY / window.innerHeight - 0.5;
+  if (!gesture || event.pointerId !== gesture.id || gesture.jumped) return;
+  gesture.dy = event.clientY - gesture.y;
+  if (gesture.dy < -FLICK_PX) {
+    gesture.jumped = true;
+    window.clearTimeout(gesture.timer);
+    jump();
+  }
+});
+
+window.addEventListener("pointerup", (event) => {
+  if (!gesture || event.pointerId !== gesture.id) return;
+  window.clearTimeout(gesture.timer);
+  const done = gesture;
+  gesture = null;
+  if (done.jumped || busy) return;
+  if (done.dy < -FLICK_PX) jump();
+  else react();
+});
+
+window.addEventListener("pointercancel", (event) => {
+  if (!gesture || event.pointerId !== gesture.id) return;
+  window.clearTimeout(gesture.timer);
+  gesture = null;
 });
 
 hit.addEventListener("click", (event) => {
-  if (pointerStarted) {
-    pointerStarted = false;
-    event.preventDefault();
-    return;
-  }
-  jump();
+  event.preventDefault();
+});
+
+stage.addEventListener("contextmenu", (event) => {
+  if (!event.target.closest(".card")) event.preventDefault();
 });
 
 window.addEventListener("keydown", (event) => {
   if (event.repeat) return;
   if (event.key !== " " && event.key !== "Enter") return;
   const current = document.activeElement;
-  if (current && current.closest && current.closest(".card, .mute, .hit")) return;
+  if (current && current.closest && current.closest(".card, .mute")) return;
   event.preventDefault();
-  jump();
+  if (busy || keyHold) return;
+  ensureAudio();
+  keyHold = {
+    jumped: false,
+    timer: window.setTimeout(() => {
+      if (!keyHold || keyHold.jumped) return;
+      keyHold.jumped = true;
+      jump();
+    }, HOLD_MS)
+  };
+});
+
+window.addEventListener("keyup", (event) => {
+  if (event.key !== " " && event.key !== "Enter") return;
+  if (!keyHold) return;
+  window.clearTimeout(keyHold.timer);
+  const jumped = keyHold.jumped;
+  keyHold = null;
+  if (!jumped && !busy) react();
 });
 
 muteBtn.addEventListener("click", (event) => {
   event.stopPropagation();
   toggleMute();
-});
-
-stage.addEventListener("pointermove", (event) => {
-  pointer.x = event.clientX / window.innerWidth - 0.5;
-  pointer.y = event.clientY / window.innerHeight - 0.5;
 });
 
 window.addEventListener("resize", () => {
