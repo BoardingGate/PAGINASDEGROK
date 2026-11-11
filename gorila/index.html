@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>El gorila albino · BoardingGate</title>
+  <meta name="description" content="Un gorila albino espera en la selva del atardecer. Tócalo: salta, gira o se cuelga de una liana, y al aterrizar trae un tuit de BoardingGate.">
+  <meta name="theme-color" content="#14180f">
+  <link rel="canonical" href="https://boardinggate.github.io/PAGINASDEGROK/gorila/">
+  <link rel="icon" href="assets/avatar-boardinggate.jpg" type="image/jpeg">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_ES">
+  <meta property="og:site_name" content="BoardingGate">
+  <meta property="og:title" content="El gorila albino · BoardingGate">
+  <meta property="og:description" content="Un gorila albino espera en la selva del atardecer. Tócalo y, al caer, aparece lo último de BoardingGate.">
+  <meta property="og:url" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/">
+  <meta property="og:image" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/assets/og.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Un gorila albino de pie en una selva iluminada por el sol del atardecer">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="El gorila albino · BoardingGate">
+  <meta name="twitter:description" content="Un gorila albino espera en la selva del atardecer. Tócalo y, al caer, aparece lo último de BoardingGate.">
+  <meta name="twitter:image" content="https://boardinggate.github.io/PAGINASDEGROK/gorila/assets/og.jpg">
+  <meta name="twitter:image:alt" content="Un gorila albino de pie en una selva iluminada por el sol del atardecer">
+  <link rel="preload" as="image" href="assets/jungla-fondo.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/gorila-idle.webp" type="image/webp" fetchpriority="high">
+  <link rel="stylesheet" href="style.css">
+  <script src="main.js" defer></script>
+</head>
+<body>
+  <h1 class="sr-only">El gorila albino de BoardingGate</h1>
+  <div class="stage" id="stage">
+    <div class="world" id="world">
+      <div class="bg" role="img" aria-label="Selva al atardecer"></div>
+      <div class="rays" aria-hidden="true"></div>
+      <div class="mist" aria-hidden="true"><i></i><i></i><i></i></div>
+      <svg class="live-vine" id="vine" aria-hidden="true">
+        <path id="vine-main" fill="none" stroke="#2c3b22" stroke-width="18" stroke-linecap="round"/>
+        <path id="vine-mid" fill="none" stroke="#5d6e3e" stroke-width="9" stroke-linecap="round"/>
+        <path id="vine-hl" fill="none" stroke="#d9c89a" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <svg class="vine-side left" viewBox="0 0 140 900" preserveAspectRatio="xMidYMin meet" aria-hidden="true">
+        <g class="sway sway-a">
+          <path d="M78 -30 C 118 140, 28 300, 86 480 C 132 640, 36 760, 90 960"/>
+          <path class="hl" d="M84 -30 C 122 140, 36 300, 92 480 C 136 640, 44 760, 96 960"/>
+        </g>
+      </svg>
+      <svg class="vine-side right" viewBox="0 0 140 900" preserveAspectRatio="xMidYMin meet" aria-hidden="true">
+        <g class="sway sway-c">
+          <path d="M62 -20 C 22 160, 112 320, 54 500 C 10 660, 100 780, 48 960"/>
+          <path class="hl" d="M68 -20 C 30 160, 116 320, 60 500 C 18 660, 104 780, 54 960"/>
+        </g>
+      </svg>
+
+      <div class="actor" id="actor">
+        <img class="pose" data-pose="idle" src="assets/gorila-idle.webp" alt="" width="531" height="1001" draggable="false" fetchpriority="high" style="--rh:1;--aspect:0.530469;--ax:0.4945;--ay:0.9900">
+        <img class="pose" data-pose="cuclillas" src="assets/gorila-cuclillas.webp" alt="" width="719" height="964" draggable="false" style="--rh:0.963037;--aspect:0.745851;--ax:0.4881;--ay:0.9896">
+        <img class="pose" data-pose="salto" src="assets/gorila-salto.webp" alt="" width="648" height="923" draggable="false" style="--rh:0.922078;--aspect:0.702058;--ax:0.4996;--ay:0.9892">
+        <img class="pose" data-pose="pirueta" src="assets/gorila-pirueta.webp" alt="" width="734" height="736" draggable="false" style="--rh:0.735265;--aspect:0.997283;--ax:0.4754;--ay:0.9864">
+        <img class="pose" data-pose="liana" src="assets/gorila-liana.webp" alt="" width="709" height="1029" draggable="false" style="--rh:1.027972;--aspect:0.689018;--ax:0.5200;--ay:0.9903">
+        <img class="pose" data-pose="aterrizaje" src="assets/gorila-aterrizaje.webp" alt="" width="801" height="851" draggable="false" style="--rh:0.850150;--aspect:0.941246;--ax:0.4875;--ay:0.9882">
+        <div class="shadow" id="shadow" aria-hidden="true"></div>
+        <span class="pin" id="foot" aria-hidden="true"></span>
+        <span class="pin" id="hand" aria-hidden="true"></span>
+      </div>
+
+      <div class="grade" aria-hidden="true"></div>
+      <div class="flash" id="flash" aria-hidden="true"></div>
+    </div>
+
+    <canvas id="dust" aria-hidden="true"></canvas>
+
+    <p class="hint" id="hint" aria-hidden="true">Tócame</p>
+
+    <button type="button" class="hit" id="hit" aria-label="Gorila albino. Tócalo para que salte."></button>
+
+    <div class="card-slot">
+      <a class="card" id="card" target="_blank" rel="noopener noreferrer" href="https://x.com/boardinggate">
+        <header class="who">
+          <img class="avatar" id="avatar" src="assets/avatar-boardinggate.jpg" alt="" width="48" height="48">
+          <div class="who-text">
+            <strong class="name">BoardingGate</strong>
+            <div class="meta"><span class="handle">@boardinggate</span><span aria-hidden="true"> · </span><time id="when"></time></div>
+          </div>
+        </header>
+        <div class="text" id="tweet-text"></div>
+        <img class="media" id="media" alt="" hidden>
+        <div class="quote" id="quote" hidden></div>
+        <span class="open">Abrir en X</span>
+      </a>
+    </div>
+
+    <button type="button" class="mute" id="mute" aria-pressed="false" aria-label="Silenciar">
+      <svg class="icon on" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 10v4h3.2L12 18.2V5.8L7.2 10H4z" fill="currentColor"/>
+        <path d="M15.2 8.4a5 5 0 0 1 0 7.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M17.4 6.2a8 8 0 0 1 0 11.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <svg class="icon off" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 10v4h3.2L12 18.2V5.8L7.2 10H4z" fill="currentColor"/>
+        <path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="sr-only" id="live" aria-live="polite"></div>
+  </div>
+  <noscript>
+    <p class="noscript">El gorila está en la selva. Para verlo saltar y leer los tuits hace falta JavaScript.</p>
+  </noscript>
+</body>
+</html>
