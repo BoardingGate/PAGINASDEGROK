@@ -3,7 +3,7 @@
   --gold: #f0d7a4;
   --ink: #f6f1e7;
   --muted: #d9cbb6;
-  --gh: min(38vh, 420px);
+  --gh: min(44vh, 483px);
 }
 
 * { box-sizing: border-box; }
@@ -515,7 +515,7 @@ body.hang .sway { animation-duration: 2.4s; }
 }
 
 @media (max-height: 760px) {
-  :root { --gh: min(32vh, 300px); }
+  :root { --gh: min(37vh, 345px); }
   .hint { font-size: 0.98rem; max-width: min(14rem, 54vw); }
   .media { height: 96px; }
   .card { max-height: 46vh; padding: 10px 12px; }
@@ -523,14 +523,14 @@ body.hang .sway { animation-duration: 2.4s; }
 }
 
 @media (max-width: 640px) {
-  :root { --gh: min(28vh, 260px); }
+  :root { --gh: min(32vh, 299px); }
   .hint { left: 14px; bottom: calc(var(--gh) + 6vh); max-width: min(12.5rem, 58vw); }
   .hit { width: min(70vw, 300px); }
   .vine-side { width: 18vw; opacity: 0.4; }
 }
 
 @media (min-width: 980px) and (min-height: 760px) {
-  :root { --gh: min(42vh, 460px); }
+  :root { --gh: min(48vh, 529px); }
   .card-slot { justify-content: flex-end; padding-right: max(22px, env(safe-area-inset-right)); }
 }
 

@@ -11,8 +11,6 @@ const POSE = {
 
 const HAND = { x: 0.2961, y: 0.0468 };
 const DURATION = 2860;
-const HOLD_MS = 300;
-const FLICK_PX = 36;
 const REACTIONS = ["grunido", "risa", "pecho", "saludo", "inclinacion"];
 const REACTION_LINE = {
   grunido: "El gorila gruñe.",
@@ -62,7 +60,9 @@ let trickFlip = false;
 let reactName = "grunido";
 let reactT0 = 0;
 let reactDur = 980;
+let reactElapsed = 0;
 let lastReact = "";
+const ready = {};
 let fx = {};
 let tweets = [];
 let cursor = 0;
@@ -250,12 +250,34 @@ function pivotFor(which, rot) {
   return { x: 0, y: (m.cy - m.ay) * node.offsetHeight };
 }
 
-function applyPose(w) {
+function markReady(name) {
+  ready[name] = true;
+}
+
+function preloadPoses() {
   for (const name of Object.keys(img)) {
-    const o = w[name] || 0;
     const node = img[name];
-    node.style.opacity = o < 0.012 ? "0" : o.toFixed(3);
-    node.style.visibility = o < 0.012 ? "hidden" : "visible";
+    ready[name] = node.complete && node.naturalWidth > 0;
+    const done = () => markReady(name);
+    if (node.decode) node.decode().then(done).catch(done);
+    else if (!ready[name]) node.addEventListener("load", done, { once: true });
+    node.addEventListener("error", done, { once: true });
+  }
+}
+
+function applyPose(w) {
+  const shown = {};
+  let total = 0;
+  for (const name of Object.keys(img)) {
+    let amount = w[name] || 0;
+    if (amount > 0 && ready[name] === false) amount = 0;
+    shown[name] = amount;
+    total += amount;
+  }
+  if (total < 0.02 && ready.idle !== false) shown.idle = 1;
+  for (const name of Object.keys(img)) {
+    const amount = shown[name] || 0;
+    img[name].style.opacity = amount < 0.012 ? "0" : amount.toFixed(3);
   }
 }
 
@@ -394,14 +416,11 @@ function frame(now) {
       applyJump(t);
     }
   } else if (mode === "react") {
-    const t = now - reactT0;
-    if (t >= reactDur) {
-      mode = "idle";
-      busy = false;
-      applyIdle(now);
-    } else {
-      applyReact(t);
-    }
+    const waited = now - reactT0 - reactElapsed;
+    const holdingForImage = ready[reactName] === false && reactElapsed > reactDur * 0.28 && reactElapsed < reactDur * 0.62 && waited < 1200;
+    if (!holdingForImage) reactElapsed += dt * 1000;
+    if (reactElapsed >= reactDur) beginJump(now);
+    else applyReact(reactElapsed);
   } else {
     applyIdle(now);
   }
@@ -416,23 +435,19 @@ function startLoop() {
   requestAnimationFrame(frame);
 }
 
-function jump() {
-  if (busy) return;
-  busy = true;
-  hint.classList.add("gone");
-  ensureAudio();
+function beginJump(now) {
   if (reduce.matches) {
     revealTweet();
-    window.setTimeout(() => {
-      busy = false;
-    }, 420);
+    mode = "idle";
+    busy = false;
+    hit.removeAttribute("aria-busy");
     return;
   }
   jumpH = measureJumpHeight();
   trick = trickFlip ? "liana" : "pirueta";
   trickFlip = !trickFlip;
   fx = { whoosh: false, card: false, impact: false };
-  jumpT0 = performance.now();
+  jumpT0 = now || performance.now();
   mode = "jump";
   hit.setAttribute("aria-busy", "true");
   startLoop();
@@ -446,9 +461,9 @@ function nextReaction() {
 }
 
 function reactionLength(name) {
-  if (name === "risa") return 1180;
+  if (name === "risa") return 1280;
+  if (name === "grunido") return 1080;
   if (name === "pecho") return 1080;
-  if (name === "grunido") return 860;
   return 960;
 }
 
@@ -512,12 +527,14 @@ function showReducedReaction(name) {
     const idle = {};
     for (const key of Object.keys(img)) idle[key] = key === "idle" ? 1 : 0;
     applyPose(idle);
+    revealTweet();
     mode = "idle";
     busy = false;
-  }, 680);
+    hit.removeAttribute("aria-busy");
+  }, 720);
 }
 
-function react() {
+function act() {
   if (busy) return;
   busy = true;
   hint.classList.add("gone");
@@ -525,7 +542,9 @@ function react() {
   reactName = nextReaction();
   reactDur = reactionLength(reactName);
   reactT0 = performance.now();
+  reactElapsed = 0;
   mode = "react";
+  hit.setAttribute("aria-busy", "true");
   live.textContent = REACTION_LINE[reactName] || "El gorila reacciona.";
   playReactionSound(reactName);
   if (reduce.matches) {
@@ -648,40 +667,47 @@ function playReactionSound(name) {
   if (!ac) return;
   const now = ac.currentTime;
   if (name === "grunido") {
-    tone(ac, now, 0.34, 98, 52, 0.055, "triangle");
+    for (let i = 0; i < 3; i += 1) {
+      const t0 = now + i * 0.26;
+      tone(ac, t0, 0.24, 108 - i * 10, 58, 0.2, "triangle");
+      tone(ac, t0, 0.22, 214 - i * 16, 96, 0.07, "sine");
+    }
     const src = ac.createBufferSource();
-    src.buffer = noiseBuffer(ac, 0.28);
+    src.buffer = noiseBuffer(ac, 0.78);
     const low = ac.createBiquadFilter();
     low.type = "lowpass";
-    low.frequency.value = 180;
+    low.frequency.value = 220;
     const gain = ac.createGain();
-    gain.gain.setValueAtTime(0.04, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.09, now + 0.05);
+    gain.gain.setValueAtTime(0.07, now + 0.55);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.78);
     src.connect(low);
     low.connect(gain);
     gain.connect(ac.destination);
     src.start(now);
-    src.stop(now + 0.3);
+    src.stop(now + 0.8);
     return;
   }
   if (name === "risa") {
-    for (let i = 0; i < 4; i += 1) {
-      const t0 = now + i * 0.15;
+    for (let i = 0; i < 5; i += 1) {
+      const t0 = now + i * 0.18;
+      tone(ac, t0, 0.14, 420 - i * 18, 180, 0.17, "triangle");
       const src = ac.createBufferSource();
-      src.buffer = noiseBuffer(ac, 0.08);
+      src.buffer = noiseBuffer(ac, 0.1);
       const filter = ac.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.value = 480 + i * 50;
-      filter.Q.value = 0.9;
+      filter.frequency.value = 640 + i * 30;
+      filter.Q.value = 0.7;
       const gain = ac.createGain();
       gain.gain.setValueAtTime(0.0001, t0);
-      gain.gain.exponentialRampToValueAtTime(0.04, t0 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.07, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.11);
       src.connect(filter);
       filter.connect(gain);
       gain.connect(ac.destination);
       src.start(t0);
-      src.stop(t0 + 0.09);
+      src.stop(t0 + 0.12);
     }
     return;
   }
@@ -947,9 +973,19 @@ function showTweet(tweet) {
   whenEl.dateTime = tweet.created_at || "";
   whenEl.title = when.title;
 
+  mediaEl.onload = null;
+  mediaEl.onerror = null;
   if (media) {
-    mediaEl.hidden = false;
+    mediaEl.hidden = true;
+    mediaEl.onload = () => {
+      if (mediaEl.getAttribute("src") === media) mediaEl.hidden = false;
+    };
+    mediaEl.onerror = () => {
+      mediaEl.hidden = true;
+      mediaEl.removeAttribute("src");
+    };
     mediaEl.src = media;
+    if (mediaEl.complete && mediaEl.naturalWidth > 0) mediaEl.hidden = false;
   } else {
     mediaEl.hidden = true;
     mediaEl.removeAttribute("src");
@@ -1012,58 +1048,28 @@ function loadTweets() {
     });
 }
 
-let gesture = null;
-let keyHold = null;
-
-function beginGesture(event) {
-  if (gesture || busy) return;
-  gesture = {
-    id: event.pointerId,
-    x: event.clientX,
-    y: event.clientY,
-    dy: 0,
-    jumped: false,
-    timer: window.setTimeout(() => {
-      if (!gesture || gesture.jumped) return;
-      gesture.jumped = true;
-      jump();
-    }, HOLD_MS)
-  };
-}
+let armedPointer = null;
 
 stage.addEventListener("pointerdown", (event) => {
   if (event.button !== 0) return;
   if (event.target.closest(".card, .mute")) return;
   ensureAudio();
-  beginGesture(event);
+  armedPointer = event.pointerId;
 });
 
 window.addEventListener("pointermove", (event) => {
   pointer.x = event.clientX / window.innerWidth - 0.5;
   pointer.y = event.clientY / window.innerHeight - 0.5;
-  if (!gesture || event.pointerId !== gesture.id || gesture.jumped) return;
-  gesture.dy = event.clientY - gesture.y;
-  if (gesture.dy < -FLICK_PX) {
-    gesture.jumped = true;
-    window.clearTimeout(gesture.timer);
-    jump();
-  }
 });
 
 window.addEventListener("pointerup", (event) => {
-  if (!gesture || event.pointerId !== gesture.id) return;
-  window.clearTimeout(gesture.timer);
-  const done = gesture;
-  gesture = null;
-  if (done.jumped || busy) return;
-  if (done.dy < -FLICK_PX) jump();
-  else react();
+  if (armedPointer !== event.pointerId) return;
+  armedPointer = null;
+  act();
 });
 
 window.addEventListener("pointercancel", (event) => {
-  if (!gesture || event.pointerId !== gesture.id) return;
-  window.clearTimeout(gesture.timer);
-  gesture = null;
+  if (armedPointer === event.pointerId) armedPointer = null;
 });
 
 hit.addEventListener("click", (event) => {
@@ -1080,25 +1086,8 @@ window.addEventListener("keydown", (event) => {
   const current = document.activeElement;
   if (current && current.closest && current.closest(".card, .mute")) return;
   event.preventDefault();
-  if (busy || keyHold) return;
   ensureAudio();
-  keyHold = {
-    jumped: false,
-    timer: window.setTimeout(() => {
-      if (!keyHold || keyHold.jumped) return;
-      keyHold.jumped = true;
-      jump();
-    }, HOLD_MS)
-  };
-});
-
-window.addEventListener("keyup", (event) => {
-  if (event.key !== " " && event.key !== "Enter") return;
-  if (!keyHold) return;
-  window.clearTimeout(keyHold.timer);
-  const jumped = keyHold.jumped;
-  keyHold = null;
-  if (!jumped && !busy) react();
+  act();
 });
 
 muteBtn.addEventListener("click", (event) => {
@@ -1113,6 +1102,7 @@ window.addEventListener("resize", () => {
 });
 
 pickStoredMute();
+preloadPoses();
 resizeCanvas();
 seedMotes();
 placeHand();
