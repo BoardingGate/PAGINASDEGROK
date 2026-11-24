@@ -1,0 +1,48 @@
+@font-face{font-family:"InterL";src:url(assets/fonts/Inter.ttf);font-weight:100 900}
+:root{--bg:#000;--txt:#e7e9ea;--gris:#71767b;--azul:#1d9bf0;--linea:#2f3336}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#000;height:100%;overflow:hidden}
+body{font-family:"InterL","Inter",system-ui,"Noto Color Emoji",sans-serif;color:var(--txt);-webkit-font-smoothing:antialiased}
+#escala{position:absolute;left:0;top:0;width:1080px;height:1350px;transform-origin:0 0}
+#marco{position:relative;width:1080px;height:1350px;background:var(--bg);overflow:hidden}
+#vista{position:absolute;left:0;right:0;top:0;bottom:96px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 28px,#000 calc(100% - 28px),transparent 100%)}
+#pista{position:relative;width:100%;height:100%}
+.item{position:absolute;left:0;top:0;width:100%;opacity:0;will-change:opacity}
+.inner{padding:44px 56px 40px}
+.texto{font-size:46px;line-height:1.36;letter-spacing:-.005em;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
+.texto .az{color:var(--azul)}
+.cita{margin-top:34px;border:2px solid var(--linea);border-radius:36px;overflow:hidden}
+.cita .cc{padding:26px 30px 28px}
+.cita .cab{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.cita .cab img{width:56px;height:56px;border-radius:50%;object-fit:cover}
+.cita .cn{font-size:34px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px}
+.cita .cu{font-size:32px;color:var(--gris);white-space:nowrap}
+.cita .ct{font-size:38px;line-height:1.36;color:var(--txt);white-space:pre-wrap;overflow-wrap:anywhere}
+.cita img.foto{display:block;width:100%;max-height:640px;object-fit:cover;object-position:50% 25%}
+.foto-propia{display:block;width:100%;max-height:820px;object-fit:cover;margin-top:34px;border-radius:36px;border:2px solid var(--linea)}
+.fecha{margin-top:34px;font-size:30px;color:var(--gris);font-weight:400}
+.fecha b{color:#9aa0a6;font-weight:600}
+.metricas{margin-top:22px;padding-top:22px;border-top:1px solid var(--linea);display:flex;gap:46px;font-size:30px;color:var(--gris)}
+.metricas span{display:flex;align-items:center;gap:12px}
+.metricas svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.metricas b{color:var(--txt);font-weight:600}
+#pie{position:absolute;left:0;bottom:0;width:100%;height:96px;border-top:1px solid var(--linea);display:flex;align-items:center;justify-content:center;z-index:5}
+#puntos{display:flex;gap:18px}
+#puntos i{display:block;width:16px;height:16px;border-radius:50%;background:#333639;transition:none}
+#puntos i.on{background:var(--azul)}
+body.grabar{cursor:none}
+
+.item.grande .texto{font-size:82px;line-height:1.3;letter-spacing:-.015em;font-weight:500}
+.item.grande .inner{padding-top:120px}
+.item.grande .fecha{margin-top:56px}
+
+/* Diseño «gorila asomando por arriba» (24/11/2026): sin cabecera ni nombre de cuenta.
+   El panel ocupa todo el ancho; el gorila asoma por el borde superior y lo agarra con una mano. */
+#panel{position:absolute;left:20px;top:200px;width:1040px;bottom:40px;border:3px solid var(--linea);border-radius:46px;background:#000;overflow:hidden;z-index:2}
+.inner{padding:44px 44px 40px}
+/* gorila: recorte 685x480 a escala 0,52 (356x250); el borde dibujado del panel está en y=366 del recorte -> 190 px */
+#gorila{position:absolute;z-index:6;width:356px;height:250px;left:664px;top:10px;pointer-events:none}
+#gorila img{position:absolute;left:0;top:0;width:100%;height:100%}
+#g-abierta{visibility:hidden}
